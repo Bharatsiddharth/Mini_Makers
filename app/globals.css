@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+:root {
+  --color-cream: #fbf4ec;
+  --color-cream-deep: #f3e6d8;
+  --color-blush: #f1cdd2;
+  --color-blush-soft: #f8e3e6;
+  --color-plum: #7a2b3f;
+  --color-plum-deep: #591f2e;
+  --color-rose: #b34a5c;
+  --color-gold: #c79a3e;
+  --color-sage: #77836a;
+  --color-ink: #2b2320;
+  --color-ink-soft: #6b5f58;
+}
+
+@theme inline {
+  --color-cream: var(--color-cream);
+  --color-cream-deep: var(--color-cream-deep);
+  --color-blush: var(--color-blush);
+  --color-blush-soft: var(--color-blush-soft);
+  --color-plum: var(--color-plum);
+  --color-plum-deep: var(--color-plum-deep);
+  --color-rose: var(--color-rose);
+  --color-gold: var(--color-gold);
+  --color-sage: var(--color-sage);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Sora", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Signature stitched divider — evokes a ribbon seam between sections */
+.stitch-divider {
+  position: relative;
+  height: 1px;
+  background-image: linear-gradient(
+    to right,
+    var(--color-rose) 0,
+    var(--color-rose) 6px,
+    transparent 6px,
+    transparent 14px
+  );
+  background-size: 14px 1px;
+  opacity: 0.55;
+}
+
+/* Scalloped edge, like the folded lip of a gift box */
+.scallop-top {
+  mask-image: radial-gradient(circle at 12px 0, transparent 11px, black 11.5px);
+  -webkit-mask-image: radial-gradient(circle at 12px 0, transparent 11px, black 11.5px);
+  mask-size: 24px 24px;
+  -webkit-mask-size: 24px 24px;
+  mask-repeat: repeat-x;
+  -webkit-mask-repeat: repeat-x;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hover-lift {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px);
+  }
+}
+
+::selection {
+  background: var(--color-blush);
+  color: var(--color-plum-deep);
+}
