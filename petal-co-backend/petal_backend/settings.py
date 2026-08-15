@@ -134,11 +134,23 @@ SIMPLE_JWT = {
 
 # ---- CORS ----
 # Point this at wherever the Next.js frontend runs.
-CORS_ALLOWED_ORIGINS = env.list(
-    "CORS_ALLOWED_ORIGINS",
-    default=["http://localhost:3000", "http://127.0.0.1:3000"],
-)
+# Normalize trailing slashes so values like https://example.vercel.app/ are accepted.
+CORS_ALLOWED_ORIGINS = [
+    origin.rstrip("/")
+    for origin in env.list(
+        "CORS_ALLOWED_ORIGINS",
+        default=["http://localhost:3000", "http://127.0.0.1:3000"],
+    )
+    if origin.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
+
+# Some browsers and frameworks also require CSRF trust for the same origin.
+CSRF_TRUSTED_ORIGINS = [
+    origin.rstrip("/")
+    for origin in env.list("CSRF_TRUSTED_ORIGINS", default=[])
+    if origin.strip()
+]
 
 # Disable Django's automatic APPEND_SLASH redirect for POST requests
 # (frontend sends exact API paths; preventing redirects preserves POST bodies)
