@@ -73,19 +73,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "petal_backend.wsgi.application"
 
-# ---- Database: prefer Postgres when it is reachable, otherwise fall back to SQLite ----
+# ---- Database: use Supabase Postgres by default and fail loudly if it is unreachable ----
 DEFAULT_SQLITE_DB = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+USE_SQLITE_FALLBACK = env.bool("USE_SQLITE_FALLBACK", default=False)
 DATABASE_URL = env("DATABASE_URL", default=DEFAULT_SQLITE_DB)
 
 if str(DATABASE_URL).startswith(("postgresql://", "postgres://")):
     try:
         import psycopg
 
-        with psycopg.connect(DATABASE_URL, connect_timeout=3, sslmode=env("DB_SSLMODE", default="require")) as conn:
+        with psycopg.connect(DATABASE_URL, connect_timeout=5, sslmode=env("DB_SSLMODE", default="require")) as conn:
             conn.execute("SELECT 1")
-    except Exception:
-        DATABASE_URL = DEFAULT_SQLITE_DB
-        os.environ["DATABASE_URL"] = DATABASE_URL
+    except Exception as exc:
+        if USE_SQLITE_FALLBACK:
+            DATABASE_URL = DEFAULT_SQLITE_DB
+            os.environ["DATABASE_URL"] = DATABASE_URL
+        else:
+            raise RuntimeError(
+                "Supabase Postgres is unreachable. Fix DATABASE_URL or set USE_SQLITE_FALLBACK=True."
+            ) from exc
 
 DATABASES = {"default": env.db("DATABASE_URL", default=DATABASE_URL)}
 
