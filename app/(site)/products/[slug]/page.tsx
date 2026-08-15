@@ -1,27 +1,66 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { notFound, useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight, Star, Truck, Undo2, ShieldCheck } from "lucide-react";
-import { products, getProductBySlug } from "@/lib/data";
+import { apiFetchWithFallback } from "@/lib/api";
+import { Product } from "@/lib/types";
+import { getProductBySlug, getProductsByCollection } from "@/lib/data";
 import ProductVisual from "@/components/ProductVisual";
 import ProductCard from "@/components/ProductCard";
 import AddToCartPanel from "@/components/AddToCartPanel";
 
-export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
-}
+export default function ProductPage() {
+  const { slug } = useParams<{ slug: string }>();
+  const fallbackProduct = getProductBySlug(slug);
+  const fallbackRelatedInitial = fallbackProduct
+    ? getProductsByCollection(fallbackProduct.collectionSlugs[0] || "")
+        .filter((fp) => fp.id !== fallbackProduct.id)
+        .slice(0, 4)
+    : [];
+  const [product, setProduct] = useState<Product | null>(fallbackProduct ?? null);
+  const [related, setRelated] = useState<Product[]>(fallbackRelatedInitial);
+  const [loading, setLoading] = useState(true);
 
-export default async function ProductPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  const product = getProductBySlug(slug);
-  if (!product) notFound();
+  useEffect(() => {
+    if (!slug) return;
+    const fbProduct = getProductBySlug(slug);
+    const fbRelated = fbProduct
+      ? getProductsByCollection(fbProduct.collectionSlugs[0] || "")
+          .filter((fp) => fp.id !== fbProduct.id)
+          .slice(0, 4)
+      : [];
 
-  const related = products
-    .filter((p) => p.id !== product.id && p.category === product.category)
-    .slice(0, 4);
+    let chosenId = "";
+    apiFetchWithFallback<Product>(`/products/${slug}/`, fbProduct as Product)
+      .then((p) => {
+        const chosen = p && (p as any).id ? p : fbProduct;
+        setProduct(chosen ?? null);
+        chosenId = chosen?.id ?? "";
+        const category = chosen ? chosen.category : undefined;
+        return apiFetchWithFallback<Product[]>(`/products/?category=${category || ""}`, fbRelated);
+      })
+      .then((prods) => {
+        const list = prods && Array.isArray(prods) && prods.length ? prods : fbRelated;
+        setRelated(list.filter((rp) => rp.id !== chosenId).slice(0, 4));
+      })
+      .catch((err) => {
+        console.error("Failed to load product:", err);
+        if (!fbProduct) notFound();
+      })
+      .finally(() => setLoading(false));
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-plum border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!product) return null;
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">

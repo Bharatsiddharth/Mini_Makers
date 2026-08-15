@@ -1,14 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import TopBar from "@/components/admin/TopBar";
 import ProductVisual from "@/components/ProductVisual";
-import { products as initialProducts } from "@/lib/data";
+import { apiFetch, apiFetchWithFallback } from "@/lib/api";
+import { Product } from "@/lib/types";
+import { products as fallbackProducts } from "@/lib/data";
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState<Product[]>(fallbackProducts);
   const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetchWithFallback<Product[]>("/products/", fallbackProducts)
+      .then((data) => setProducts(data.length ? data : fallbackProducts))
+      .catch((err) => console.error("Failed to load products:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(
     () =>
@@ -20,9 +30,22 @@ export default function AdminProductsPage() {
     [products, query]
   );
 
-  const removeProduct = (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+  const removeProduct = async (id: string) => {
+    try {
+      await apiFetch(`/products/${id}/`, { method: "DELETE" });
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error("Failed to delete product:", err);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-plum border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <>

@@ -42,3 +42,78 @@ export type Customer = {
   joined: string;
   location: string;
 };
+
+// ---------- Auth types ----------
+
+export type User = {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  city: string;
+  state: string;
+  isAdmin: boolean;
+  date_joined: string;
+};
+
+export type LoginResponse = {
+  access: string;
+  refresh: string;
+  user: User;
+};
+
+export type RegisterPayload = {
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  password: string;
+};
+
+// ---------- Cart API types ----------
+
+export type CartItem = {
+  id: number;
+  product: Product;
+  productId: number;
+  quantity: number;
+  lineTotal: number;
+};
+
+export type CartData = {
+  id: number;
+  items: CartItem[];
+  subtotal: number;
+  count: number;
+};
+
+// ---------- Analytics types ----------
+
+export type OverviewData = {
+  revenue7d: number;
+  revenueDelta: number;
+  orders7d: number;
+  ordersDelta: number;
+  aov: number;
+  aovDelta: number;
+  newCustomers7d: number;
+  newCustomersDelta: number;
+};
+
+export type RevenueByDayPoint = {
+  day: string;
+  date: string;
+  revenue: number;
+  orders: number;
+};
+
+export type SalesByCategoryPoint = {
+  category: string;
+  value: number;
+};
+
+export type TrafficBySourcePoint = {
+  source: string;
+  visits: number;
+};

@@ -1,22 +1,51 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { notFound, useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { collections, getCollectionBySlug, getProductsByCollection } from "@/lib/data";
+import { apiFetchWithFallback } from "@/lib/api";
+import { Collection, Product } from "@/lib/types";
+import { getCollectionBySlug, getProductsByCollection } from "@/lib/data";
 import ProductCard from "@/components/ProductCard";
 
-export function generateStaticParams() {
-  return collections.map((c) => ({ slug: c.slug }));
-}
+export default function CollectionPage() {
+  const { slug } = useParams<{ slug: string }>();
+  const fallbackCollection = getCollectionBySlug(slug);
+  const fallbackItems = getProductsByCollection(slug);
+  const [collection, setCollection] = useState<Collection | null>(fallbackCollection ?? null);
+  const [items, setItems] = useState<Product[]>(fallbackItems);
+  const [loading, setLoading] = useState(true);
 
-export default async function CollectionPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  const collection = getCollectionBySlug(slug);
-  if (!collection) notFound();
-  const items = getProductsByCollection(slug);
+  useEffect(() => {
+    if (!slug) return;
+    const fbCollection = getCollectionBySlug(slug);
+    const fbItems = getProductsByCollection(slug);
+
+    Promise.all([
+      apiFetchWithFallback<Collection>(`/collections/${slug}/`, fbCollection as Collection),
+      apiFetchWithFallback<Product[]>(`/products/?collection=${slug}`, fbItems),
+    ])
+      .then(([coll, prods]) => {
+        setCollection(coll);
+        setItems(prods.length ? prods : fbItems);
+      })
+      .catch((err) => {
+        console.error("Failed to load collection:", err);
+        if (!fbCollection) notFound();
+      })
+      .finally(() => setLoading(false));
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-plum border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!collection) return null;
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">

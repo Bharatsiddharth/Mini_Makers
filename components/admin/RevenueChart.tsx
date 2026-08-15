@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   AreaChart,
   Area,
@@ -9,9 +10,31 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { revenueByDay } from "@/lib/data";
+import { apiFetchWithFallback } from "@/lib/api";
+import { RevenueByDayPoint } from "@/lib/types";
+import { revenueByDay as fallbackRevenue } from "@/lib/data";
 
 export default function RevenueChart() {
+  const [data, setData] = useState<RevenueByDayPoint[]>(fallbackRevenue);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetchWithFallback<RevenueByDayPoint[]>("/admin/analytics/revenue/", fallbackRevenue)
+      .then((newData) => setData(newData.length ? newData : fallbackRevenue))
+      .catch((err) => console.error("Failed to load revenue chart:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-plum/10 bg-white p-5">
+        <div className="flex h-[260px] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-plum border-t-transparent" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-plum/10 bg-white p-5">
       <div className="mb-4 flex items-center justify-between">
@@ -19,12 +42,9 @@ export default function RevenueChart() {
           <h3 className="font-display text-lg">Revenue this week</h3>
           <p className="text-xs text-ink-soft">Gross revenue by day, in ₹</p>
         </div>
-        <span className="rounded-full bg-sage/10 px-2.5 py-1 text-xs font-medium text-sage">
-          +12.4% WoW
-        </span>
       </div>
       <ResponsiveContainer width="100%" height={260}>
-        <AreaChart data={revenueByDay} margin={{ left: -18, right: 8, top: 8 }}>
+        <AreaChart data={data} margin={{ left: -18, right: 8, top: 8 }}>
           <defs>
             <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#7a2b3f" stopOpacity={0.35} />

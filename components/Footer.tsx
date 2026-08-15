@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { AtSign, MessageCircle, Mail } from "lucide-react";
-import { collections } from "@/lib/data";
 
 export default function Footer() {
   return (
@@ -30,13 +29,11 @@ export default function Footer() {
           <div>
             <h3 className="font-display text-sm text-ink">Shop</h3>
             <ul className="mt-3 space-y-2 text-sm text-ink-soft">
-              {collections.slice(0, 5).map((c) => (
-                <li key={c.slug}>
-                  <Link href={`/collections/${c.slug}`} className="hover:text-plum">
-                    {c.name}
-                  </Link>
-                </li>
-              ))}
+              <li><Link href="/collections" className="hover:text-plum">All collections</Link></li>
+              <li><Link href="/products" className="hover:text-plum">All products</Link></li>
+              <li><Link href="/collections/hampers" className="hover:text-plum">Gift hampers</Link></li>
+              <li><Link href="/collections/pendants" className="hover:text-plum">Pendants</Link></li>
+              <li><Link href="/collections/bracelets" className="hover:text-plum">Bracelets</Link></li>
             </ul>
           </div>
 

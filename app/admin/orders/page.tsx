@@ -1,16 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import TopBar from "@/components/admin/TopBar";
 import StatusBadge from "@/components/admin/StatusBadge";
-import { orders } from "@/lib/data";
+import { apiFetchWithFallback } from "@/lib/api";
 import { Order } from "@/lib/types";
+import { orders as fallbackOrders } from "@/lib/data";
 
 const STATUSES: (Order["status"] | "All")[] = ["All", "Pending", "Fulfilled", "Shipped", "Refunded"];
 
 export default function AdminOrdersPage() {
+  const [orders, setOrders] = useState<Order[]>(fallbackOrders);
   const [status, setStatus] = useState<(typeof STATUSES)[number]>("All");
   const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetchWithFallback<Order[]>("/admin/orders/", fallbackOrders)
+      .then((data) => setOrders(data.length ? data : fallbackOrders))
+      .catch((err) => console.error("Failed to load orders:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
     return orders.filter((o) => {
@@ -21,7 +31,15 @@ export default function AdminOrdersPage() {
         o.customer.toLowerCase().includes(query.toLowerCase());
       return matchesStatus && matchesQuery;
     });
-  }, [status, query]);
+  }, [status, query, orders]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-plum border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <>

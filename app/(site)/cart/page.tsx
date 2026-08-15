@@ -1,13 +1,44 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetch, getAccessToken } from "@/lib/api";
 import ProductVisual from "@/components/ProductVisual";
-import { Minus, Plus, X, ShoppingBag } from "lucide-react";
+import { Minus, Plus, X, ShoppingBag, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 export default function CartPage() {
   const { lines, setQty, removeItem, subtotal } = useCart();
+  const { user } = useAuth();
+  const router = useRouter();
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [error, setError] = useState("");
   const shipping = subtotal === 0 || subtotal >= 999 ? 0 : 79;
+
+  const handleCheckout = async () => {
+    if (!user) {
+      router.push("/login?redirect=/cart");
+      return;
+    }
+    if (!getAccessToken()) return;
+    setCheckingOut(true);
+    setError("");
+    try {
+      await apiFetch("/cart/checkout/", {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      // Clear local cart after checkout
+      localStorage.removeItem("petal_cart");
+      router.push("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Checkout failed. Please try again.");
+    } finally {
+      setCheckingOut(false);
+    }
+  };
 
   if (lines.length === 0) {
     return (
@@ -103,11 +134,23 @@ export default function CartPage() {
             <span>Total</span>
             <span>₹{(subtotal + shipping).toLocaleString("en-IN")}</span>
           </div>
-          <button className="mt-6 w-full rounded-full bg-plum px-6 py-3.5 text-sm font-medium text-white hover:bg-plum-deep">
-            Checkout
+          {error && (
+            <div className="mt-3 rounded-xl bg-rose/10 px-4 py-2.5 text-xs text-rose">
+              {error}
+            </div>
+          )}
+          <button
+            onClick={handleCheckout}
+            disabled={checkingOut}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-plum px-6 py-3.5 text-sm font-medium text-white hover:bg-plum-deep disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {checkingOut && <Loader2 className="h-4 w-4 animate-spin" />}
+            {checkingOut ? "Processing..." : user ? "Checkout" : "Sign in to checkout"}
           </button>
           <p className="mt-3 text-center text-xs text-ink-soft/70">
-            This is a demo storefront — checkout is not wired to payments.
+            {user
+              ? "Checkout requires a signed-in account."
+              : "You'll be asked to sign in to complete your order."}
           </p>
         </div>
       </div>

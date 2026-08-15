@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu, X, Search, ShoppingBag, User } from "lucide-react";
-import { collections } from "@/lib/data";
+import { Menu, X, Search, ShoppingBag, User, LogOut } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetchWithFallback } from "@/lib/api";
+import { Collection } from "@/lib/types";
+import { collections as fallbackCollections } from "@/lib/data";
 
 const navLinks = [
   { href: "/collections", label: "Collections" },
@@ -14,7 +17,15 @@ const navLinks = [
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collections, setCollections] = useState<Collection[]>(fallbackCollections);
   const { count, open } = useCart();
+  const { user, logout } = useAuth();
+
+  useEffect(() => {
+    apiFetchWithFallback<Collection[]>("/collections/", fallbackCollections)
+      .then((data) => setCollections(data.length ? data : fallbackCollections))
+      .catch(() => setCollections(fallbackCollections));
+  }, []);
 
   return (
     <header className="sticky top-0 z-30 border-b border-plum/10 bg-cream/90 backdrop-blur">
@@ -62,14 +73,39 @@ export default function Navbar() {
           >
             <Search className="h-4.5 w-4.5" />
           </button>
-          <Link
-            href="/admin"
-            className="hidden h-9 w-9 items-center justify-center rounded-full hover:bg-blush-soft sm:flex"
-            aria-label="Admin dashboard"
-            title="Admin dashboard"
-          >
-            <User className="h-4.5 w-4.5" />
-          </Link>
+
+          {user ? (
+            <>
+              {user.isAdmin && (
+                <Link
+                  href="/admin"
+                  className="hidden h-9 w-9 items-center justify-center rounded-full hover:bg-blush-soft sm:flex"
+                  aria-label="Admin dashboard"
+                  title="Admin dashboard"
+                >
+                  <User className="h-4.5 w-4.5" />
+                </Link>
+              )}
+              <button
+                onClick={logout}
+                className="hidden h-9 w-9 items-center justify-center rounded-full hover:bg-blush-soft sm:flex"
+                aria-label="Log out"
+                title="Log out"
+              >
+                <LogOut className="h-4.5 w-4.5" />
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden h-9 w-9 items-center justify-center rounded-full hover:bg-blush-soft sm:flex"
+              aria-label="Sign in"
+              title="Sign in"
+            >
+              <User className="h-4.5 w-4.5" />
+            </Link>
+          )}
+
           <button
             className="relative flex h-9 w-9 items-center justify-center rounded-full hover:bg-blush-soft"
             onClick={open}
@@ -98,17 +134,39 @@ export default function Navbar() {
                 {l.label}
               </Link>
             ))}
-            <Link
-              href="/admin"
-              className="rounded-lg px-2 py-2.5 text-sm font-medium text-ink hover:bg-blush-soft"
-              onClick={() => setMobileOpen(false)}
-            >
-              Admin dashboard
-            </Link>
+            {user ? (
+              <>
+                {user.isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="rounded-lg px-2 py-2.5 text-sm font-medium text-ink hover:bg-blush-soft"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Admin dashboard
+                  </Link>
+                )}
+                <button
+                  onClick={() => {
+                    setMobileOpen(false);
+                    logout();
+                  }}
+                  className="rounded-lg px-2 py-2.5 text-left text-sm font-medium text-ink hover:bg-blush-soft"
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-lg px-2 py-2.5 text-sm font-medium text-ink hover:bg-blush-soft"
+                onClick={() => setMobileOpen(false)}
+              >
+                Sign in
+              </Link>
+            )}
           </nav>
         </div>
       )}
-      
     </header>
   );
 }

@@ -1,12 +1,51 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Hero from "@/components/Hero";
 import SectionHeading from "@/components/SectionHeading";
 import ProductRow from "@/components/ProductRow";
 import CollectionGrid from "@/components/CollectionGrid";
 import Link from "next/link";
-import { collections, homeSections, getProductsByCollection } from "@/lib/data";
+import { apiFetchWithFallback } from "@/lib/api";
+import { Product, Collection } from "@/lib/types";
+import { products as fallbackProducts, collections as fallbackCollections } from "@/lib/data";
 import { Sparkle } from "lucide-react";
 
 export default function Home() {
+  const [collections, setCollections] = useState<Collection[]>(fallbackCollections);
+  const [products, setProducts] = useState<Product[]>(fallbackProducts);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      apiFetchWithFallback<Collection[]>("/collections/", fallbackCollections),
+      apiFetchWithFallback<Product[]>("/products/", fallbackProducts),
+    ])
+      .then(([colls, prods]) => {
+        setCollections(colls.length ? colls : fallbackCollections);
+        setProducts(prods.length ? prods : fallbackProducts);
+      })
+      .catch((err) => console.error("Failed to load store data:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const getProductsByCollection = (slug: string) =>
+    products.filter((p) => p.collectionSlugs.includes(slug));
+
+  const homeSections = [
+    { title: "Loved right now", subtitle: "What everyone's adding to cart this week", collectionSlug: collections[0]?.slug || "hampers" },
+    { title: "For festive days", subtitle: "Jhumkas and drops built for celebration", collectionSlug: collections[3]?.slug || "jhumkas" },
+    { title: "Everyday layers", subtitle: "Bracelets and rings you won't take off", collectionSlug: collections[2]?.slug || "bracelets" },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-plum border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <>
       <Hero />
@@ -16,9 +55,9 @@ export default function Home() {
           eyebrow="Trending"
           title="Our viral edit"
           subtitle="The pieces our customers keep re-ordering"
-          viewAllHref="/collections/hampers"
+          viewAllHref={`/collections/${collections[0]?.slug || "hampers"}`}
         />
-        <ProductRow products={getProductsByCollection("hampers")} />
+        <ProductRow products={getProductsByCollection(collections[0]?.slug || "hampers")} />
       </section>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

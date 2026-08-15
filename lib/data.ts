@@ -69,13 +69,13 @@ export const customers: Customer[] = [
 ];
 
 export const revenueByDay = [
-  { day: "Mon", revenue: 18400, orders: 24 },
-  { day: "Tue", revenue: 21200, orders: 29 },
-  { day: "Wed", revenue: 16800, orders: 21 },
-  { day: "Thu", revenue: 24300, orders: 33 },
-  { day: "Fri", revenue: 31200, orders: 41 },
-  { day: "Sat", revenue: 38900, orders: 52 },
-  { day: "Sun", revenue: 27600, orders: 36 },
+  { day: "Mon", date: "2026-08-10", revenue: 18400, orders: 24 },
+  { day: "Tue", date: "2026-08-11", revenue: 21200, orders: 29 },
+  { day: "Wed", date: "2026-08-12", revenue: 16800, orders: 21 },
+  { day: "Thu", date: "2026-08-13", revenue: 24300, orders: 33 },
+  { day: "Fri", date: "2026-08-14", revenue: 31200, orders: 41 },
+  { day: "Sat", date: "2026-08-15", revenue: 38900, orders: 52 },
+  { day: "Sun", date: "2026-08-16", revenue: 27600, orders: 36 },
 ];
 
 export const salesByCategory = [

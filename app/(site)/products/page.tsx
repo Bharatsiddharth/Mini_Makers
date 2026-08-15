@@ -1,15 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SectionHeading from "@/components/SectionHeading";
 import ProductCard from "@/components/ProductCard";
-import { products, collections } from "@/lib/data";
+import { apiFetchWithFallback } from "@/lib/api";
+import { Product, Collection } from "@/lib/types";
+import { products as fallbackProducts, collections as fallbackCollections } from "@/lib/data";
 
 const SORTS = ["Featured", "Price: low to high", "Price: high to low"] as const;
 
 export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>(fallbackProducts);
+  const [collections, setCollections] = useState<Collection[]>(fallbackCollections);
   const [activeCollection, setActiveCollection] = useState<string>("all");
   const [sort, setSort] = useState<(typeof SORTS)[number]>("Featured");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      apiFetchWithFallback<Product[]>("/products/", fallbackProducts),
+      apiFetchWithFallback<Collection[]>("/collections/", fallbackCollections),
+    ])
+      .then(([prods, colls]) => {
+        setProducts(prods.length ? prods : fallbackProducts);
+        setCollections(colls.length ? colls : fallbackCollections);
+      })
+      .catch((err) => console.error("Failed to load products:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
     let list =
@@ -20,7 +38,15 @@ export default function ProductsPage() {
     if (sort === "Price: low to high") list.sort((a, b) => a.price - b.price);
     if (sort === "Price: high to low") list.sort((a, b) => b.price - a.price);
     return list;
-  }, [activeCollection, sort]);
+  }, [activeCollection, sort, products]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-plum border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">

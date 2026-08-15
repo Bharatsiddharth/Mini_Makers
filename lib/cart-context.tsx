@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { Product } from "./types";
+import { apiFetch, getAccessToken } from "./api";
 
 type CartLine = { product: Product; qty: number };
 
@@ -16,6 +17,7 @@ type CartContextValue = {
   isOpen: boolean;
   open: () => void;
   close: () => void;
+  syncWithBackend: () => Promise<void>;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -24,7 +26,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  const addItem = (product: Product, qty = 1) => {
+  const syncWithBackend = useCallback(async () => {
+    if (!getAccessToken()) return;
+    try {
+      const cart = await apiFetch<{ items: { product: Product; quantity: number }[] }>("/cart/");
+      const syncedLines = cart.items.map((item) => ({
+        product: item.product,
+        qty: item.quantity,
+      }));
+      setLines(syncedLines);
+    } catch {
+      // Backend not available or not logged in — keep local state
+    }
+  }, []);
+
+  useEffect(() => {
+    syncWithBackend();
+  }, [syncWithBackend]);
+
+  const addItem = async (product: Product, qty = 1) => {
     setLines((prev) => {
       const existing = prev.find((l) => l.product.id === product.id);
       if (existing) {
@@ -35,27 +55,61 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return [...prev, { product, qty }];
     });
     setIsOpen(true);
+
+    if (getAccessToken()) {
+      try {
+        await apiFetch("/cart/items/", {
+          method: "POST",
+          body: JSON.stringify({ productId: Number(product.id), quantity: qty }),
+        });
+      } catch {
+        // Local state works even if backend sync fails
+      }
+    }
   };
 
-  const removeItem = (productId: string) => {
+  const removeItem = async (productId: string) => {
     setLines((prev) => prev.filter((l) => l.product.id !== productId));
+    if (getAccessToken()) {
+      try {
+        await apiFetch(`/cart/items/${Number(productId)}/`, { method: "DELETE" });
+      } catch {
+        // Ignore
+      }
+    }
   };
 
-  const setQty = (productId: string, qty: number) => {
+  const setQty = async (productId: string, qty: number) => {
     setLines((prev) =>
       qty <= 0
         ? prev.filter((l) => l.product.id !== productId)
         : prev.map((l) => (l.product.id === productId ? { ...l, qty } : l))
     );
+    if (getAccessToken()) {
+      try {
+        await apiFetch(`/cart/items/${Number(productId)}/`, {
+          method: "PATCH",
+          body: JSON.stringify({ quantity: qty }),
+        });
+      } catch {
+        // Ignore
+      }
+    }
   };
 
-  const clear = () => setLines([]);
+  const clear = () => {
+    setLines([]);
+    if (getAccessToken()) {
+      Promise.all(
+        lines.map((l) =>
+          apiFetch(`/cart/items/${Number(l.product.id)}/`, { method: "DELETE" }).catch(() => {})
+        )
+      ).catch(() => {});
+    }
+  };
 
-  const count = useMemo(() => lines.reduce((sum, l) => sum + l.qty, 0), [lines]);
-  const subtotal = useMemo(
-    () => lines.reduce((sum, l) => sum + l.qty * l.product.price, 0),
-    [lines]
-  );
+  const count = lines.reduce((sum, l) => sum + l.qty, 0);
+  const subtotal = lines.reduce((sum, l) => sum + l.qty * l.product.price, 0);
 
   return (
     <CartContext.Provider
@@ -70,6 +124,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         isOpen,
         open: () => setIsOpen(true),
         close: () => setIsOpen(false),
+        syncWithBackend,
       }}
     >
       {children}

@@ -1,11 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import TopBar from "@/components/admin/TopBar";
-import { customers } from "@/lib/data";
+import { apiFetchWithFallback } from "@/lib/api";
+import { Customer } from "@/lib/types";
+import { customers as fallbackCustomers } from "@/lib/data";
 
 export default function AdminCustomersPage() {
+  const [customers, setCustomers] = useState<Customer[]>(fallbackCustomers);
   const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetchWithFallback<Customer[]>("/admin/customers/", fallbackCustomers)
+      .then((data) => setCustomers(data.length ? data : fallbackCustomers))
+      .catch((err) => console.error("Failed to load customers:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(
     () =>
@@ -14,8 +25,16 @@ export default function AdminCustomersPage() {
           c.name.toLowerCase().includes(query.toLowerCase()) ||
           c.email.toLowerCase().includes(query.toLowerCase())
       ),
-    [query]
+    [query, customers]
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-plum border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <>
