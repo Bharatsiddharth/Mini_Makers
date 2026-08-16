@@ -30,7 +30,33 @@ export type Order = {
   date: string;
   items: number;
   total: number;
-  status: "Pending" | "Fulfilled" | "Shipped" | "Refunded";
+  status: "Pending" | "Cancelled" | "Fulfilled" | "Shipped" | "Refunded";
+};
+
+export type OrderItemDetail = {
+  id: number;
+  product: number | null;
+  product_name: string;
+  quantity: number;
+  price_at_purchase: number;
+};
+
+export type CustomerOrder = {
+  id: string;
+  status: "Pending" | "Cancelled" | "Fulfilled" | "Shipped" | "Refunded";
+  total: number;
+  shipping_name: string;
+  email: string;
+  phone: string;
+  shipping_address: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  payment_method: string;
+  notes: string;
+  items: OrderItemDetail[];
+  referral_source: string;
+  created_at: string;
 };
 
 export type Customer = {

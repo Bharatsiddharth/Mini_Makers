@@ -3,10 +3,12 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     AdminOrderViewSet,
+    CancelOrderView,
     CartAddItemView,
     CartItemDetailView,
     CartView,
     CheckoutView,
+    MyOrderDetailView,
     MyOrdersView,
 )
 
@@ -25,6 +27,10 @@ urlpatterns = [
     path("cart/checkout/", CheckoutView.as_view(), name="cart-checkout"),
     path("orders", MyOrdersView.as_view(), name="my-orders-no-slash"),
     path("orders/", MyOrdersView.as_view(), name="my-orders"),
+    path("orders/<str:order_number>", MyOrderDetailView.as_view(), name="my-order-detail-no-slash"),
+    path("orders/<str:order_number>/", MyOrderDetailView.as_view(), name="my-order-detail"),
+    path("orders/<str:order_number>/cancel", CancelOrderView.as_view(), name="cancel-order-no-slash"),
+    path("orders/<str:order_number>/cancel/", CancelOrderView.as_view(), name="cancel-order"),
     # admin orders - both slash variants
     path("admin/orders", AdminOrderViewSet.as_view({"get": "list"}), name="admin-order-list-no-slash"),
     path(

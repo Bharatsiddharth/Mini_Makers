@@ -35,6 +35,7 @@ class CartItem(models.Model):
 class Order(models.Model):
     class Status(models.TextChoices):
         PENDING = "Pending", "Pending"
+        CANCELLED = "Cancelled", "Cancelled"
         FULFILLED = "Fulfilled", "Fulfilled"
         SHIPPED = "Shipped", "Shipped"
         REFUNDED = "Refunded", "Refunded"
@@ -43,6 +44,15 @@ class Order(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     total = models.DecimalField(max_digits=10, decimal_places=2)
+    shipping_name = models.CharField(max_length=120, blank=True, default="")
+    email = models.EmailField(max_length=254, blank=True, default="")
+    phone = models.CharField(max_length=20, blank=True, default="")
+    shipping_address = models.CharField(max_length=255, blank=True, default="")
+    city = models.CharField(max_length=120, blank=True, default="")
+    state = models.CharField(max_length=120, blank=True, default="")
+    postal_code = models.CharField(max_length=20, blank=True, default="")
+    payment_method = models.CharField(max_length=80, default="Cash on Delivery")
+    notes = models.TextField(blank=True, default="")
     # Where the order came from — powers the admin "traffic/sales by source" view.
     referral_source = models.CharField(max_length=50, default="Direct")
     created_at = models.DateTimeField(auto_now_add=True)

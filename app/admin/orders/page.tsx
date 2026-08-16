@@ -7,7 +7,7 @@ import { apiFetchWithFallback } from "@/lib/api";
 import { Order } from "@/lib/types";
 import { orders as fallbackOrders } from "@/lib/data";
 
-const STATUSES: (Order["status"] | "All")[] = ["All", "Pending", "Fulfilled", "Shipped", "Refunded"];
+const STATUSES: (Order["status"] | "All")[] = ["All", "Pending", "Cancelled", "Fulfilled", "Shipped", "Refunded"];
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>(fallbackOrders);

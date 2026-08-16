@@ -20,11 +20,33 @@ type CartContextValue = {
   syncWithBackend: () => Promise<void>;
 };
 
+const CART_KEY = "petal_cart";
+
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem(CART_KEY);
+    if (!saved) return;
+
+    try {
+      const parsed = JSON.parse(saved) as CartLine[];
+      if (Array.isArray(parsed)) {
+        setLines(parsed);
+      }
+    } catch {
+      localStorage.removeItem(CART_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(CART_KEY, JSON.stringify(lines));
+  }, [lines]);
 
   const syncWithBackend = useCallback(async () => {
     if (!getAccessToken()) return;
@@ -99,6 +121,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clear = () => {
     setLines([]);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(CART_KEY);
+    }
     if (getAccessToken()) {
       Promise.all(
         lines.map((l) =>

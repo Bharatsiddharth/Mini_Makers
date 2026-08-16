@@ -7,15 +7,41 @@ import { useAuth } from "@/lib/auth-context";
 import { apiFetch, getAccessToken } from "@/lib/api";
 import ProductVisual from "@/components/ProductVisual";
 import { Minus, Plus, X, ShoppingBag, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const initialForm = {
+  shippingName: "",
+  email: "",
+  phone: "",
+  shippingAddress: "",
+  city: "",
+  state: "",
+  postalCode: "",
+  paymentMethod: "Cash on Delivery",
+  notes: "",
+};
 
 export default function CartPage() {
-  const { lines, setQty, removeItem, subtotal } = useCart();
-  const { user } = useAuth();
+  const { lines, setQty, removeItem, subtotal, clear } = useCart();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState("");
+  const [form, setForm] = useState(initialForm);
   const shipping = subtotal === 0 || subtotal >= 999 ? 0 : 79;
+  const total = subtotal + shipping;
+
+  useEffect(() => {
+    if (!user) return;
+    setForm((current) => ({
+      ...current,
+      shippingName: current.shippingName.trim() || `${user.first_name} ${user.last_name}`.trim() || user.email,
+      email: current.email.trim() || user.email,
+      phone: current.phone.trim() || user.phone || "",
+      city: current.city.trim() || user.city || "",
+      state: current.state.trim() || user.state || "",
+    }));
+  }, [user]);
 
   const handleCheckout = async () => {
     if (!user) {
@@ -23,22 +49,54 @@ export default function CartPage() {
       return;
     }
     if (!getAccessToken()) return;
+
+    const shippingName = form.shippingName.trim();
+    const phone = form.phone.trim();
+    const shippingAddress = form.shippingAddress.trim();
+    const city = form.city.trim();
+    const state = form.state.trim();
+
+    if (!shippingName || !phone || !shippingAddress || !city || !state) {
+      setError("Please complete your name, phone, address, city, and state before checkout.");
+      return;
+    }
+
     setCheckingOut(true);
     setError("");
     try {
-      await apiFetch("/cart/checkout/", {
+      const order = await apiFetch<{ id: string }>("/cart/checkout/", {
         method: "POST",
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          shipping_name: shippingName,
+          email: form.email.trim() || user.email,
+          phone,
+          shipping_address: shippingAddress,
+          city,
+          state,
+          postal_code: form.postalCode.trim(),
+          payment_method: form.paymentMethod,
+          notes: form.notes.trim(),
+          referralSource: "Direct",
+        }),
       });
-      // Clear local cart after checkout
+      clear();
       localStorage.removeItem("petal_cart");
-      router.push("/");
+      router.push(`/orders/${order.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed. Please try again.");
     } finally {
       setCheckingOut(false);
     }
   };
+
+  if (loading) {
+    return (
+      <section className="mx-auto flex max-w-7xl flex-col items-center px-4 py-24 text-center sm:px-6 lg:px-8">
+        <Loader2 className="h-8 w-8 animate-spin text-plum" />
+        <p className="mt-4 text-sm text-ink-soft">Loading your account…</p>
+      </section>
+    );
+  }
 
   if (lines.length === 0) {
     return (
@@ -118,8 +176,91 @@ export default function CartPage() {
         </ul>
 
         <div className="h-fit rounded-2xl border border-plum/10 bg-white p-5 sm:p-6">
-          <h2 className="font-display text-lg">Order summary</h2>
-          <div className="mt-4 flex flex-col gap-2 text-sm">
+          <h2 className="font-display text-lg">Shipping details</h2>
+          <div className="mt-4 grid gap-3">
+            <label className="text-sm text-ink-soft">
+              Full name
+              <input
+                value={form.shippingName}
+                onChange={(e) => setForm({ ...form, shippingName: e.target.value })}
+                className="mt-1 w-full rounded-xl border border-plum/20 bg-cream/60 px-3 py-2.5 text-sm text-ink outline-none focus:border-plum"
+              />
+            </label>
+            <label className="text-sm text-ink-soft">
+              Email
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="mt-1 w-full rounded-xl border border-plum/20 bg-cream/60 px-3 py-2.5 text-sm text-ink outline-none focus:border-plum"
+              />
+            </label>
+            <label className="text-sm text-ink-soft">
+              Phone
+              <input
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                className="mt-1 w-full rounded-xl border border-plum/20 bg-cream/60 px-3 py-2.5 text-sm text-ink outline-none focus:border-plum"
+              />
+            </label>
+            <label className="text-sm text-ink-soft">
+              Street address
+              <input
+                value={form.shippingAddress}
+                onChange={(e) => setForm({ ...form, shippingAddress: e.target.value })}
+                className="mt-1 w-full rounded-xl border border-plum/20 bg-cream/60 px-3 py-2.5 text-sm text-ink outline-none focus:border-plum"
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="text-sm text-ink-soft">
+                City
+                <input
+                  value={form.city}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-plum/20 bg-cream/60 px-3 py-2.5 text-sm text-ink outline-none focus:border-plum"
+                />
+              </label>
+              <label className="text-sm text-ink-soft">
+                State
+                <input
+                  value={form.state}
+                  onChange={(e) => setForm({ ...form, state: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-plum/20 bg-cream/60 px-3 py-2.5 text-sm text-ink outline-none focus:border-plum"
+                />
+              </label>
+            </div>
+            <label className="text-sm text-ink-soft">
+              Postal code
+              <input
+                value={form.postalCode}
+                onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
+                className="mt-1 w-full rounded-xl border border-plum/20 bg-cream/60 px-3 py-2.5 text-sm text-ink outline-none focus:border-plum"
+              />
+            </label>
+            <label className="text-sm text-ink-soft">
+              Payment method
+              <select
+                value={form.paymentMethod}
+                onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
+                className="mt-1 w-full rounded-xl border border-plum/20 bg-cream/60 px-3 py-2.5 text-sm text-ink outline-none focus:border-plum"
+              >
+                <option>Cash on Delivery</option>
+                <option>UPI</option>
+                <option>Card</option>
+              </select>
+            </label>
+            <label className="text-sm text-ink-soft">
+              Delivery notes
+              <textarea
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                rows={3}
+                className="mt-1 w-full rounded-xl border border-plum/20 bg-cream/60 px-3 py-2.5 text-sm text-ink outline-none focus:border-plum"
+              />
+            </label>
+          </div>
+
+          <div className="mt-5 flex flex-col gap-2 text-sm">
             <div className="flex justify-between text-ink-soft">
               <span>Subtotal</span>
               <span>₹{subtotal.toLocaleString("en-IN")}</span>
@@ -132,7 +273,7 @@ export default function CartPage() {
           <div className="stitch-divider my-4" />
           <div className="flex justify-between font-medium">
             <span>Total</span>
-            <span>₹{(subtotal + shipping).toLocaleString("en-IN")}</span>
+            <span>₹{total.toLocaleString("en-IN")}</span>
           </div>
           {error && (
             <div className="mt-3 rounded-xl bg-rose/10 px-4 py-2.5 text-xs text-rose">
@@ -145,11 +286,11 @@ export default function CartPage() {
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-plum px-6 py-3.5 text-sm font-medium text-white hover:bg-plum-deep disabled:cursor-not-allowed disabled:opacity-60"
           >
             {checkingOut && <Loader2 className="h-4 w-4 animate-spin" />}
-            {checkingOut ? "Processing..." : user ? "Checkout" : "Sign in to checkout"}
+            {checkingOut ? "Processing..." : user ? "Place order" : "Sign in to checkout"}
           </button>
           <p className="mt-3 text-center text-xs text-ink-soft/70">
             {user
-              ? "Checkout requires a signed-in account."
+              ? "Payments are currently dummy placeholders for future Razorpay/UPI integration."
               : "You'll be asked to sign in to complete your order."}
           </p>
         </div>

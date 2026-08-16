@@ -36,14 +36,30 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    """Used for a user's own order history."""
+    """Used for a user's own order history and detail views."""
 
     items = OrderItemSerializer(many=True, read_only=True)
     id = serializers.CharField(source="order_number", read_only=True)
 
     class Meta:
         model = Order
-        fields = ["id", "status", "total", "items", "created_at"]
+        fields = [
+            "id",
+            "status",
+            "total",
+            "shipping_name",
+            "email",
+            "phone",
+            "shipping_address",
+            "city",
+            "state",
+            "postal_code",
+            "payment_method",
+            "notes",
+            "items",
+            "referral_source",
+            "created_at",
+        ]
 
 
 class AdminOrderSerializer(serializers.ModelSerializer):

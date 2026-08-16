@@ -1,5 +1,6 @@
 const STYLES: Record<string, string> = {
   Pending: "bg-gold/15 text-gold",
+  Cancelled: "bg-rose/15 text-rose",
   Fulfilled: "bg-sage/15 text-sage",
   Shipped: "bg-plum/10 text-plum",
   Refunded: "bg-rose/10 text-rose",

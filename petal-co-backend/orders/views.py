@@ -79,7 +79,7 @@ class CheckoutView(APIView):
     """
     POST /api/cart/checkout/ — turns the current cart into an Order,
     snapshotting product name/price and decrementing stock, then empties the cart.
-    Body may include {referralSource}.
+    Body may include shipping and payment details.
     """
 
     permission_classes = [permissions.IsAuthenticated]
@@ -97,11 +97,37 @@ class CheckoutView(APIView):
                     {"detail": f"Not enough stock for {item.product.name}."}, status=400
                 )
 
+        payload = request.data or {}
+        shipping_name = str(payload.get("shipping_name") or payload.get("name") or request.user.get_full_name() or request.user.email).strip()
+        email = str(payload.get("email") or request.user.email).strip()
+        phone = str(payload.get("phone") or request.user.phone or "").strip()
+        shipping_address = str(payload.get("shipping_address") or payload.get("address") or "").strip()
+        city = str(payload.get("city") or request.user.city or "").strip()
+        state = str(payload.get("state") or request.user.state or "").strip()
+        postal_code = str(payload.get("postal_code") or "").strip()
+        payment_method = str(payload.get("payment_method") or "Cash on Delivery").strip() or "Cash on Delivery"
+        notes = str(payload.get("notes") or "").strip()
+
+        if not shipping_name or not shipping_address or not city or not state or not phone:
+            return Response(
+                {"detail": "Please complete your name, phone, address, city, and state before checkout."},
+                status=400,
+            )
+
         total = sum((item.line_total for item in items), start=0)
         order = Order.objects.create(
             user=request.user,
             total=total,
-            referral_source=request.data.get("referralSource", "Direct"),
+            shipping_name=shipping_name,
+            email=email,
+            phone=phone,
+            shipping_address=shipping_address,
+            city=city,
+            state=state,
+            postal_code=postal_code,
+            payment_method=payment_method,
+            notes=notes,
+            referral_source=str(payload.get("referralSource") or "Direct"),
         )
         for item in items:
             OrderItem.objects.create(
@@ -126,6 +152,38 @@ class MyOrdersView(generics.ListAPIView):
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user).prefetch_related("items")
+
+
+class MyOrderDetailView(generics.RetrieveAPIView):
+    """GET /api/orders/<order_number>/ — the logged-in user's specific order detail."""
+
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = "order_number"
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).prefetch_related("items")
+
+
+class CancelOrderView(APIView):
+    """POST /api/orders/<order_number>/cancel/ — cancel a pending order."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, order_number):
+        order = Order.objects.filter(user=request.user, order_number=order_number).first()
+        if not order:
+            return Response({"detail": "Order not found."}, status=404)
+
+        if order.status == Order.Status.CANCELLED:
+            return Response({"detail": "This order is already cancelled."}, status=400)
+
+        if order.status != Order.Status.PENDING:
+            return Response({"detail": "Only pending orders can be cancelled."}, status=400)
+
+        order.status = Order.Status.CANCELLED
+        order.save(update_fields=["status"])
+        return Response(OrderSerializer(order).data, status=200)
 
 
 class AdminOrderViewSet(viewsets.ModelViewSet):

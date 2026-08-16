@@ -76,6 +76,14 @@ export default function Navbar() {
 
           {user ? (
             <>
+              <Link
+                href="/orders"
+                className="hidden rounded-full px-3 py-1.5 text-xs font-medium text-ink hover:bg-blush-soft sm:inline-flex"
+                aria-label="My orders"
+                title="My orders"
+              >
+                My orders
+              </Link>
               {user.isAdmin && (
                 <Link
                   href="/admin"
@@ -136,6 +144,13 @@ export default function Navbar() {
             ))}
             {user ? (
               <>
+                <Link
+                  href="/orders"
+                  className="rounded-lg px-2 py-2.5 text-sm font-medium text-ink hover:bg-blush-soft"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  My orders
+                </Link>
                 {user.isAdmin && (
                   <Link
                     href="/admin"
