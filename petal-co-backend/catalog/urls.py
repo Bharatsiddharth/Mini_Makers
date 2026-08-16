@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import CollectionViewSet, ProductViewSet
+from .views import CollectionViewSet, ProductImageUploadView, ProductViewSet
 
 router = DefaultRouter()
 router.register("collections", CollectionViewSet, basename="collection")
@@ -13,6 +13,10 @@ router.register("products", ProductViewSet, basename="product")
 # These plain "path" entries make BOTH variants resolve to the same viewset
 # actions, so adding a product never 404s because of a missing slash.
 urlpatterns = [
+    # Must come before the "products/<slug:slug>" patterns below, or
+    # "upload-image" would get swallowed as a product slug.
+    path("products/upload-image", ProductImageUploadView.as_view(), name="product-image-upload-no-slash"),
+    path("products/upload-image/", ProductImageUploadView.as_view(), name="product-image-upload"),
     path(
         "products",
         ProductViewSet.as_view(

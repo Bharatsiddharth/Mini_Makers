@@ -25,12 +25,13 @@ class ProductSerializer(serializers.ModelSerializer):
     )
     reviews = serializers.IntegerField(source="reviews_count", read_only=True)
     image = serializers.CharField(source="image_key")
+    imageUrl = serializers.CharField(source="image_url", allow_blank=True, required=False)
 
     class Meta:
         model = Product
         fields = [
             "id", "slug", "name", "price", "compareAt", "category",
-            "collectionSlugs", "image", "gradient", "badge", "soldOut",
+            "collectionSlugs", "image", "imageUrl", "gradient", "badge", "soldOut",
             "description", "stock", "rating", "reviews",
         ]
 
@@ -50,6 +51,6 @@ class ProductWriteSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             "id", "slug", "name", "price", "compare_at", "category",
-            "collection_slugs", "image_key", "gradient_start", "gradient_end",
+            "collection_slugs", "image_key", "image_url", "gradient_start", "gradient_end",
             "badge", "description", "stock", "rating", "reviews_count",
         ]

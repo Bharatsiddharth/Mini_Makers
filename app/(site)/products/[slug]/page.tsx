@@ -73,6 +73,7 @@ export default function ProductPage() {
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
         <ProductVisual
           image={product.image}
+          imageUrl={product.imageUrl}
           gradient={product.gradient}
           className="aspect-square w-full rounded-3xl"
         />

@@ -82,6 +82,58 @@ export async function apiFetch<T>(
 }
 
 /**
+ * Uploads a file as multipart/form-data. Deliberately does NOT set
+ * Content-Type — the browser needs to set it itself (including the
+ * multipart boundary), which apiFetch's forced "application/json" header
+ * would otherwise break.
+ */
+export async function apiUploadFile<T>(path: string, file: File, fieldName = "image"): Promise<T> {
+  const token = getAccessToken();
+  
+  const createFormData = () => {
+    const formData = new FormData();
+    formData.append(fieldName, file);
+    return formData;
+  };
+
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers,
+    body: createFormData(),
+  });
+
+  // Handle token expiration - try to refresh and retry
+  if (res.status === 401 && getRefreshToken()) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      const newToken = getAccessToken();
+      headers["Authorization"] = `Bearer ${newToken}`;
+      res = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers,
+        body: createFormData(),
+      });
+    }
+  }
+
+  if (!res.ok) {
+    let detail = `Upload failed with status ${res.status}`;
+    try {
+      const body = await res.json();
+      detail = body.detail || Object.values(body).flat().join(", ") || detail;
+    } catch {
+      // ignore
+    }
+    throw new Error(detail);
+  }
+
+  return res.json();
+}
+
+/**
  * Fetches from the API, falling back to provided mock/fallback data
  * when the API is unavailable or returns no data.
  *

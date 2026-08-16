@@ -5,7 +5,7 @@ import { Plus, Pencil, Trash2, X } from "lucide-react";
 import TopBar from "@/components/admin/TopBar";
 import ProductVisual from "@/components/ProductVisual";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import { apiFetch, apiFetchWithFallback } from "@/lib/api";
+import { apiFetch, apiFetchWithFallback, apiUploadFile } from "@/lib/api";
 import { Product } from "@/lib/types";
 import { products as fallbackProducts } from "@/lib/data";
 
@@ -18,6 +18,7 @@ const EMPTY_FORM = {
   description: "",
   stock: "0",
   image_key: "box",
+  image_url: "",
   badge: "",
   collection_slugs: [] as string[],
 };
@@ -42,6 +43,23 @@ export default function AdminProductsPage() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [imageError, setImageError] = useState("");
+
+  const handleImageSelect = (file: File | null) => {
+    setImageError("");
+    if (!file) {
+      setImageFile(null);
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError("Image is too large — please keep it under 5MB.");
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
 
   useEffect(() => {
     apiFetchWithFallback<Product[]>("/products/", fallbackProducts)
@@ -79,6 +97,9 @@ export default function AdminProductsPage() {
     setEditingId(null);
     setForm(EMPTY_FORM);
     setFormError("");
+    setImageFile(null);
+    setImagePreview("");
+    setImageError("");
     setShowForm(true);
   };
 
@@ -93,10 +114,14 @@ export default function AdminProductsPage() {
       description: p.description,
       stock: String(p.stock),
       image_key: p.image,
+      image_url: p.imageUrl || "",
       badge: p.badge ?? "",
       collection_slugs: p.collectionSlugs,
     });
     setFormError("");
+    setImageFile(null);
+    setImagePreview(p.imageUrl || "");
+    setImageError("");
     setShowForm(true);
   };
 
@@ -110,6 +135,23 @@ export default function AdminProductsPage() {
         setFormError("Slug is required (auto-generated from name if left blank).");
         return;
       }
+
+      let imageUrl = form.image_url;
+      if (imageFile) {
+        try {
+          console.log("Uploading image file:", imageFile.name, "Size:", imageFile.size);
+          const uploaded = await apiUploadFile<{ url: string }>("/products/upload-image/", imageFile);
+          console.log("Image uploaded successfully:", uploaded.url);
+          imageUrl = uploaded.url;
+        } catch (uploadError) {
+          console.error("Image upload failed:", uploadError);
+          const errorMessage = uploadError instanceof Error ? uploadError.message : "Failed to upload image";
+          setFormError(`Image upload failed: ${errorMessage}`);
+          setSaving(false);
+          return;
+        }
+      }
+
       const payload = {
         slug,
         name: form.name.trim(),
@@ -117,6 +159,7 @@ export default function AdminProductsPage() {
         compare_at: form.compare_at || null,
         category: form.category.trim(),
         image_key: form.image_key,
+        image_url: imageUrl,
         gradient_start: "#f1cdd2",
         gradient_end: "#7a2b3f",
         badge: form.badge,
@@ -195,7 +238,7 @@ export default function AdminProductsPage() {
               <tr key={p.slug} className="border-b border-plum/5 last:border-0 hover:bg-blush-soft/40">
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">
-                    <ProductVisual image={p.image} gradient={p.gradient} className="h-10 w-10 rounded-lg" />
+                    <ProductVisual image={p.image} imageUrl={p.imageUrl} gradient={p.gradient} className="h-10 w-10 rounded-lg" />
                     <span className="font-medium">{p.name}</span>
                   </div>
                 </td>
@@ -361,7 +404,35 @@ export default function AdminProductsPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-ink">Image key</label>
+                <label className="mb-1 block text-xs font-medium text-ink">Product photo</label>
+                <div className="flex items-center gap-3">
+                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-plum/20 bg-cream/60">
+                    {imagePreview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={imagePreview} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <ProductVisual
+                        image={form.image_key}
+                        gradient={["#f1cdd2", "#7a2b3f"]}
+                        className="h-full w-full"
+                      />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={(e) => handleImageSelect(e.target.files?.[0] ?? null)}
+                      className="block w-full text-xs text-ink-soft file:mr-3 file:rounded-full file:border-0 file:bg-plum file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-plum-deep"
+                    />
+                    <p className="mt-1 text-[11px] text-ink-soft/70">JPG, PNG, WEBP, or GIF. Max 5MB.</p>
+                    {imageError && <p className="mt-1 text-[11px] text-rose">{imageError}</p>}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-ink">Fallback icon (used until a photo is uploaded)</label>
                 <div className="flex flex-wrap gap-1.5">
                   {IMAGE_KEYS.map((key) => (
                     <button

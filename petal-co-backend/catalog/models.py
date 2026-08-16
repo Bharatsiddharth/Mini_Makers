@@ -31,13 +31,15 @@ class Product(models.Model):
     collections = models.ManyToManyField(Collection, related_name="products", blank=True)
 
     # Placeholder visual, mirroring the frontend's gradient+icon ProductVisual
-    # (no real photography stored/scraped) — swap for an ImageField once
-    # real product photos exist.
+    # (used as a fallback when no real photo has been uploaded).
     image_key = models.CharField(
         max_length=40,
         default="box",
-        help_text="Icon key used by the frontend's ProductVisual component.",
+        help_text="Icon key used by the frontend's ProductVisual component as a fallback.",
     )
+    # Public URL of an uploaded product photo (Supabase Storage). Blank = use
+    # the gradient+icon placeholder above instead.
+    image_url = models.URLField(max_length=500, blank=True, default="")
     gradient_start = models.CharField(max_length=7, default="#f1cdd2")
     gradient_end = models.CharField(max_length=7, default="#7a2b3f")
 

@@ -52,6 +52,7 @@ export default function CartDrawer() {
                   <li key={product.id} className="flex gap-3">
                     <ProductVisual
                       image={product.image}
+                      imageUrl={product.imageUrl}
                       gradient={product.gradient}
                       className="h-16 w-16 shrink-0 rounded-xl sm:h-20 sm:w-20"
                     />

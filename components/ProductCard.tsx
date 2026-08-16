@@ -15,6 +15,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="relative aspect-[4/5] rounded-2xl">
           <ProductVisual
             image={product.image}
+            imageUrl={product.imageUrl}
             gradient={product.gradient}
             className="h-full w-full rounded-2xl"
           />

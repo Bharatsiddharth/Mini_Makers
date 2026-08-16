@@ -29,13 +29,29 @@ const ICONS: Record<string, LucideIcon> = {
 
 export default function ProductVisual({
   image,
+  imageUrl,
   gradient,
   className = "",
 }: {
   image: string;
+  imageUrl?: string;
   gradient: [string, string];
   className?: string;
 }) {
+  if (imageUrl) {
+    return (
+      <div className={`relative overflow-hidden ${className}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imageUrl}
+          alt=""
+          className="h-full w-full object-cover"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+
   const Icon = ICONS[image] ?? Gift;
   return (
     <div

@@ -7,6 +7,7 @@ export type Product = {
   category: string;
   collectionSlugs: string[];
   image: string;
+  imageUrl?: string;
   gradient: [string, string];
   badge?: "Sale" | "New" | "Bestseller" | "Sold out";
   soldOut?: boolean;

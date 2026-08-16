@@ -176,6 +176,13 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Petal & Co. <noreply@exa
 # Where "new order" admin notifications go. Falls back to the SMTP login if unset.
 SUPPORT_EMAIL = env("SUPPORT_EMAIL", default=EMAIL_HOST_USER)
 
+# ---- Supabase Storage (product image uploads) ----
+# SUPABASE_SERVICE_ROLE_KEY is a SECRET — server-side only, never send it to
+# the frontend. It's different from NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY above.
+SUPABASE_URL = env("SUPABASE_URL", default=env("NEXT_PUBLIC_SUPABASE_URL", default=""))
+SUPABASE_SERVICE_ROLE_KEY = env("SUPABASE_SERVICE_ROLE_KEY", default="")
+SUPABASE_STORAGE_BUCKET = env("SUPABASE_STORAGE_BUCKET", default="product-images")
+
 # Make sure order-email failures (caught+logged in orders/emails.py, never raised
 # so checkout can't break) are always visible in the terminal instead of being
 # silently swallowed by whatever the ambient logging config happens to be.
