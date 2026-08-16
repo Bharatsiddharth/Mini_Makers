@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from catalog.models import Product
 from catalog.permissions import IsAdmin
 
+from .emails import send_admin_new_order_notification, send_order_confirmation_email
 from .models import Cart, CartItem, Order, OrderItem
 from .serializers import AdminOrderSerializer, CartSerializer, OrderSerializer
 
@@ -141,6 +142,12 @@ class CheckoutView(APIView):
             item.product.save()
 
         cart.items.all().delete()
+
+        # Fire both emails only after this transaction actually commits, so a
+        # mid-transaction rollback can't leave us having emailed a phantom order.
+        transaction.on_commit(lambda: send_order_confirmation_email(order))
+        transaction.on_commit(lambda: send_admin_new_order_notification(order))
+
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
 
 

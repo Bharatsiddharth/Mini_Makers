@@ -161,3 +161,31 @@ CSRF_TRUSTED_ORIGINS = [
 # Disable Django's automatic APPEND_SLASH redirect for POST requests
 # (frontend sends exact API paths; preventing redirects preserves POST bodies)
 APPEND_SLASH = False
+
+# ---- Email ----
+# Defaults to printing emails to the console so local dev works even without
+# SMTP creds in .env. Set EMAIL_BACKEND to the smtp backend + the rest of
+# these vars in .env to actually send mail.
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Petal & Co. <noreply@example.com>")
+# Where "new order" admin notifications go. Falls back to the SMTP login if unset.
+SUPPORT_EMAIL = env("SUPPORT_EMAIL", default=EMAIL_HOST_USER)
+
+# Make sure order-email failures (caught+logged in orders/emails.py, never raised
+# so checkout can't break) are always visible in the terminal instead of being
+# silently swallowed by whatever the ambient logging config happens to be.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {"class": "logging.StreamHandler"},
+    },
+    "loggers": {
+        "orders.emails": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+    },
+}

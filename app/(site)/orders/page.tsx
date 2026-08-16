@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { apiFetch, apiFetchWithFallback } from "@/lib/api";
 import { CustomerOrder } from "@/lib/types";
 import { PackageCheck, MapPin, Phone, ShoppingBag, XCircle } from "lucide-react";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -13,6 +14,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const [confirmOrderId, setConfirmOrderId] = useState<string | null>(null);
 
   const handleCancelOrder = async (orderId: string) => {
     setCancelingId(orderId);
@@ -28,6 +30,7 @@ export default function OrdersPage() {
       setError(err instanceof Error ? err.message : "Unable to cancel this order.");
     } finally {
       setCancelingId(null);
+      setConfirmOrderId(null);
     }
   };
 
@@ -108,7 +111,7 @@ export default function OrdersPage() {
                   {order.status === "Pending" && (
                     <button
                       type="button"
-                      onClick={() => handleCancelOrder(order.id)}
+                      onClick={() => setConfirmOrderId(order.id)}
                       disabled={cancelingId === order.id}
                       className="inline-flex items-center gap-2 rounded-full border border-rose/20 bg-rose/5 px-3 py-1.5 text-xs font-medium text-rose transition hover:bg-rose/10 disabled:cursor-not-allowed disabled:opacity-60"
                     >
@@ -162,6 +165,17 @@ export default function OrdersPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmOrderId !== null}
+        title="Cancel this order?"
+        description={`Order ${confirmOrderId} will be cancelled and can't be reactivated. This can't be undone.`}
+        confirmLabel="Yes, cancel order"
+        cancelLabel="Keep order"
+        loading={cancelingId === confirmOrderId}
+        onConfirm={() => confirmOrderId && handleCancelOrder(confirmOrderId)}
+        onCancel={() => setConfirmOrderId(null)}
+      />
     </section>
   );
 }

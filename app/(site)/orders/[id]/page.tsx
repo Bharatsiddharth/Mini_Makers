@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
 import { CustomerOrder } from "@/lib/types";
 import { ArrowLeft, CheckCircle2, MapPin, PackageCheck, Phone, XCircle } from "lucide-react";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [canceling, setCanceling] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleCancelOrder = async () => {
     if (!order) return;
@@ -26,6 +28,7 @@ export default function OrderDetailPage() {
       setError(err instanceof Error ? err.message : "Unable to cancel this order.");
     } finally {
       setCanceling(false);
+      setConfirmOpen(false);
     }
   };
 
@@ -87,7 +90,7 @@ export default function OrderDetailPage() {
             {order.status === "Pending" && (
               <button
                 type="button"
-                onClick={handleCancelOrder}
+                onClick={() => setConfirmOpen(true)}
                 disabled={canceling}
                 className="inline-flex items-center gap-2 rounded-full border border-rose/20 bg-rose/5 px-3 py-1.5 text-sm font-medium text-rose transition hover:bg-rose/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -140,6 +143,17 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Cancel this order?"
+        description={`Order ${order.id} will be cancelled and can't be reactivated. This can't be undone.`}
+        confirmLabel="Yes, cancel order"
+        cancelLabel="Keep order"
+        loading={canceling}
+        onConfirm={handleCancelOrder}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </section>
   );
 }

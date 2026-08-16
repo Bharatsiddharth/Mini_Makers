@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, FormEvent } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import TopBar from "@/components/admin/TopBar";
 import ProductVisual from "@/components/ProductVisual";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { apiFetch, apiFetchWithFallback } from "@/lib/api";
 import { Product } from "@/lib/types";
 import { products as fallbackProducts } from "@/lib/data";
@@ -39,6 +40,8 @@ export default function AdminProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     apiFetchWithFallback<Product[]>("/products/", fallbackProducts)
@@ -57,14 +60,18 @@ export default function AdminProductsPage() {
     [products, query]
   );
 
-  const removeProduct = async (id: string) => {
-    if (!confirm("Delete this product from the catalog?")) return;
+  const removeProduct = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await apiFetch(`/products/${id}/`, { method: "DELETE" });
-      setProducts((prev) => prev.filter((p) => p.slug !== id && p.id !== id));
+      await apiFetch(`/products/${deleteTarget.slug}/`, { method: "DELETE" });
+      setProducts((prev) => prev.filter((p) => p.slug !== deleteTarget.slug && p.id !== deleteTarget.id));
+      setDeleteTarget(null);
     } catch (err) {
       console.error("Failed to delete product:", err);
       alert("Failed to delete product. Check that you're logged in as an admin.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -218,7 +225,7 @@ export default function AdminProductsPage() {
                       <Pencil className="h-3.5 w-3.5 text-ink-soft" />
                     </button>
                     <button
-                      onClick={() => removeProduct(p.slug)}
+                      onClick={() => setDeleteTarget(p)}
                       className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-rose/10"
                       aria-label={`Delete ${p.name}`}
                     >
@@ -422,6 +429,21 @@ export default function AdminProductsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete this product?"
+        description={
+          deleteTarget
+            ? `"${deleteTarget.name}" will be permanently removed from the catalog. This can't be undone.`
+            : ""
+        }
+        confirmLabel="Yes, delete product"
+        cancelLabel="Keep product"
+        loading={deleting}
+        onConfirm={removeProduct}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </>
   );
 }
