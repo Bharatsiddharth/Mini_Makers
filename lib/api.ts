@@ -84,6 +84,9 @@ export async function apiFetch<T>(
 /**
  * Fetches from the API, falling back to provided mock/fallback data
  * when the API is unavailable or returns no data.
+ *
+ * Handles DRF paginated responses ({ count, next, previous, results })
+ * by extracting the `results` array so callers always receive a plain array.
  */
 export async function apiFetchWithFallback<T>(
   path: string,
@@ -92,6 +95,22 @@ export async function apiFetchWithFallback<T>(
 ): Promise<T> {
   try {
     const data = await apiFetch<T>(path, options);
+
+    // DRF paginated response: { count, next, previous, results: [...] }
+    if (
+      data &&
+      typeof data === "object" &&
+      !Array.isArray(data) &&
+      "results" in (data as Record<string, unknown>)
+    ) {
+      const results = (data as unknown as { results: T }).results;
+      // If the API returns an empty results array, fall back to mock data
+      if (Array.isArray(results) && results.length === 0 && Array.isArray(fallback) && fallback.length > 0) {
+        return fallback;
+      }
+      return results;
+    }
+
     // If the API returns an empty array, fall back to mock data
     if (Array.isArray(data) && data.length === 0 && Array.isArray(fallback) && fallback.length > 0) {
       return fallback;
