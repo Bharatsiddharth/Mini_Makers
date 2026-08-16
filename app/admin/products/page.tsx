@@ -205,48 +205,48 @@ export default function AdminProductsPage() {
     <>
       <TopBar title="Products" subtitle={`${products.length} products in catalog`} />
 
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search products or category..."
-          className="w-64 rounded-full border border-plum/20 bg-white px-4 py-2 text-sm outline-none focus:border-plum"
+          className="w-full rounded-full border border-plum/20 bg-white px-4 py-2 text-sm outline-none focus:border-plum sm:w-64"
         />
         <button
           onClick={openAddForm}
-          className="flex items-center gap-2 rounded-full bg-plum px-4 py-2 text-sm font-medium text-white hover:bg-plum-deep"
+          className="flex items-center justify-center gap-2 rounded-full bg-plum px-4 py-2 text-sm font-medium text-white hover:bg-plum-deep"
         >
           <Plus className="h-4 w-4" />
           Add product
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-plum/10 bg-white">
-        <table className="w-full text-left text-sm">
+      <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-2xl sm:border sm:border-plum/10 sm:bg-white">
+        <table className="w-full min-w-[640px] text-left text-sm">
           <thead>
             <tr className="border-b border-plum/10 text-xs text-ink-soft">
-              <th className="px-5 py-3 font-medium">Product</th>
-              <th className="px-5 py-3 font-medium">Category</th>
-              <th className="px-5 py-3 font-medium">Price</th>
-              <th className="px-5 py-3 font-medium">Stock</th>
-              <th className="px-5 py-3 font-medium">Rating</th>
-              <th className="px-5 py-3 font-medium text-right">Actions</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Product</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Category</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Price</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Stock</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Rating</th>
+              <th className="px-3 py-2.5 font-medium text-right sm:px-5 sm:py-3">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((p) => (
               <tr key={p.slug} className="border-b border-plum/5 last:border-0 hover:bg-blush-soft/40">
-                <td className="px-5 py-3">
+                <td className="px-3 py-2.5 sm:px-5 sm:py-3">
                   <div className="flex items-center gap-3">
-                    <ProductVisual image={p.image} imageUrl={p.imageUrl} gradient={p.gradient} className="h-10 w-10 rounded-lg" />
+                    <ProductVisual image={p.image} imageUrl={p.imageUrl} gradient={p.gradient} className="h-10 w-10 shrink-0 rounded-lg" />
                     <span className="font-medium">{p.name}</span>
                   </div>
                 </td>
-                <td className="px-5 py-3 text-ink-soft">{p.category}</td>
-                <td className="px-5 py-3">₹{p.price.toLocaleString("en-IN")}</td>
-                <td className="px-5 py-3">
+                <td className="px-3 py-2.5 text-ink-soft sm:px-5 sm:py-3">{p.category}</td>
+                <td className="px-3 py-2.5 sm:px-5 sm:py-3">₹{p.price.toLocaleString("en-IN")}</td>
+                <td className="px-3 py-2.5 sm:px-5 sm:py-3">
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${
                       p.stock === 0
                         ? "bg-rose/10 text-rose"
                         : p.stock <= 15
@@ -257,8 +257,8 @@ export default function AdminProductsPage() {
                     {p.stock === 0 ? "Out of stock" : `${p.stock} in stock`}
                   </span>
                 </td>
-                <td className="px-5 py-3 text-ink-soft">{p.rating}★ ({p.reviews})</td>
-                <td className="px-5 py-3">
+                <td className="px-3 py-2.5 text-ink-soft sm:px-5 sm:py-3">{p.rating}★ ({p.reviews})</td>
+                <td className="px-3 py-2.5 sm:px-5 sm:py-3">
                   <div className="flex justify-end gap-1">
                     <button
                       onClick={() => openEditForm(p)}
@@ -280,7 +280,7 @@ export default function AdminProductsPage() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-5 py-8 text-center text-ink-soft">
+                <td colSpan={6} className="px-3 py-8 text-center text-ink-soft sm:px-5">
                   No products match your search.
                 </td>
               </tr>
@@ -290,8 +290,8 @@ export default function AdminProductsPage() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:p-8">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-0 sm:p-8">
+          <div className="min-h-screen w-full max-w-lg rounded-none bg-white p-4 shadow-xl sm:min-h-0 sm:rounded-2xl sm:p-6">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="font-display text-xl">{editingId ? "Edit product" : "Add product"}</h2>
               <button
@@ -308,7 +308,7 @@ export default function AdminProductsPage() {
             )}
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Name *</label>
                   <input
@@ -337,7 +337,7 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Price (₹) *</label>
                   <input
@@ -363,7 +363,7 @@ export default function AdminProductsPage() {
                     placeholder="2399"
                   />
                 </div>
-                <div>
+                <div className="col-span-2 sm:col-span-1">
                   <label className="mb-1 block text-xs font-medium text-ink">Stock *</label>
                   <input
                     type="number"
@@ -376,7 +376,7 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink">Category *</label>
                   <input

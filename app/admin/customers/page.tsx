@@ -45,27 +45,27 @@ export default function AdminCustomersPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name or email..."
-          className="w-64 rounded-full border border-plum/20 bg-white px-4 py-2 text-sm outline-none focus:border-plum"
+          className="w-full rounded-full border border-plum/20 bg-white px-4 py-2 text-sm outline-none focus:border-plum sm:w-64"
         />
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-plum/10 bg-white">
-        <table className="w-full text-left text-sm">
+      <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-2xl sm:border sm:border-plum/10 sm:bg-white">
+        <table className="w-full min-w-[560px] text-left text-sm">
           <thead>
             <tr className="border-b border-plum/10 text-xs text-ink-soft">
-              <th className="px-5 py-3 font-medium">Customer</th>
-              <th className="px-5 py-3 font-medium">Location</th>
-              <th className="px-5 py-3 font-medium">Orders</th>
-              <th className="px-5 py-3 font-medium">Lifetime spend</th>
-              <th className="px-5 py-3 font-medium">Joined</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Customer</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Location</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Orders</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Lifetime spend</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Joined</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((c) => (
               <tr key={c.id} className="border-b border-plum/5 last:border-0 hover:bg-blush-soft/40">
-                <td className="px-5 py-3">
+                <td className="px-3 py-2.5 sm:px-5 sm:py-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-plum/10 text-xs font-medium text-plum">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-plum/10 text-xs font-medium text-plum">
                       {c.name.split(" ").map((n) => n[0]).join("")}
                     </div>
                     <div>
@@ -74,15 +74,15 @@ export default function AdminCustomersPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-5 py-3 text-ink-soft">{c.location}</td>
-                <td className="px-5 py-3">{c.orders}</td>
-                <td className="px-5 py-3 font-medium">₹{c.spent.toLocaleString("en-IN")}</td>
-                <td className="px-5 py-3 text-ink-soft">{c.joined}</td>
+                <td className="px-3 py-2.5 text-ink-soft sm:px-5 sm:py-3">{c.location}</td>
+                <td className="px-3 py-2.5 sm:px-5 sm:py-3">{c.orders}</td>
+                <td className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">₹{c.spent.toLocaleString("en-IN")}</td>
+                <td className="px-3 py-2.5 text-ink-soft sm:px-5 sm:py-3">{c.joined}</td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-ink-soft">
+                <td colSpan={5} className="px-3 py-8 text-center text-ink-soft sm:px-5">
                   No customers match your search.
                 </td>
               </tr>

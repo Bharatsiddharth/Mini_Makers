@@ -45,13 +45,13 @@ export default function AdminOrdersPage() {
     <>
       <TopBar title="Orders" subtitle={`${orders.length} total orders`} />
 
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0 sm:pb-0">
           {STATUSES.map((s) => (
             <button
               key={s}
               onClick={() => setStatus(s)}
-              className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
+              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium ${
                 status === s
                   ? "border-plum bg-plum text-white"
                   : "border-plum/20 bg-white text-ink-soft hover:bg-blush-soft"
@@ -65,41 +65,41 @@ export default function AdminOrdersPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search order ID or customer..."
-          className="w-64 rounded-full border border-plum/20 bg-white px-4 py-2 text-sm outline-none focus:border-plum"
+          className="w-full rounded-full border border-plum/20 bg-white px-4 py-2 text-sm outline-none focus:border-plum sm:w-64"
         />
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-plum/10 bg-white">
-        <table className="w-full text-left text-sm">
+      <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-2xl sm:border sm:border-plum/10 sm:bg-white">
+        <table className="w-full min-w-[560px] text-left text-sm">
           <thead>
             <tr className="border-b border-plum/10 text-xs text-ink-soft">
-              <th className="px-5 py-3 font-medium">Order</th>
-              <th className="px-5 py-3 font-medium">Customer</th>
-              <th className="px-5 py-3 font-medium">Date</th>
-              <th className="px-5 py-3 font-medium">Items</th>
-              <th className="px-5 py-3 font-medium">Total</th>
-              <th className="px-5 py-3 font-medium">Status</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Order</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Customer</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Date</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Items</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Total</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">Status</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((o) => (
               <tr key={o.id} className="border-b border-plum/5 last:border-0 hover:bg-blush-soft/40">
-                <td className="px-5 py-3 font-medium text-plum">{o.id}</td>
-                <td className="px-5 py-3">
+                <td className="px-3 py-2.5 font-medium text-plum sm:px-5 sm:py-3">{o.id}</td>
+                <td className="px-3 py-2.5 sm:px-5 sm:py-3">
                   <p>{o.customer}</p>
                   <p className="text-xs text-ink-soft">{o.email}</p>
                 </td>
-                <td className="px-5 py-3 text-ink-soft">{o.date}</td>
-                <td className="px-5 py-3 text-ink-soft">{o.items}</td>
-                <td className="px-5 py-3 font-medium">₹{o.total.toLocaleString("en-IN")}</td>
-                <td className="px-5 py-3">
+                <td className="px-3 py-2.5 text-ink-soft sm:px-5 sm:py-3">{o.date}</td>
+                <td className="px-3 py-2.5 text-ink-soft sm:px-5 sm:py-3">{o.items}</td>
+                <td className="px-3 py-2.5 font-medium sm:px-5 sm:py-3">₹{o.total.toLocaleString("en-IN")}</td>
+                <td className="px-3 py-2.5 sm:px-5 sm:py-3">
                   <StatusBadge status={o.status} />
                 </td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-5 py-8 text-center text-ink-soft">
+                <td colSpan={6} className="px-3 py-8 text-center text-ink-soft sm:px-5">
                   No orders match your filters.
                 </td>
               </tr>
