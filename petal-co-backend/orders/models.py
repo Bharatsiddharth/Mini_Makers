@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 
 from catalog.models import Product
 
@@ -57,8 +57,43 @@ class Order(models.Model):
     referral_source = models.CharField(max_length=50, default="Direct")
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Statuses that mean the order never shipped / was reversed — the stock
+    # reserved for it at checkout should be released back to inventory.
+    RESTOCK_STATUSES = {Status.CANCELLED, Status.REFUNDED}
+
     class Meta:
         ordering = ["-created_at"]
+
+    @transaction.atomic
+    def apply_status(self, new_status):
+        """
+        Change status and keep product stock in sync:
+        - moving INTO Cancelled/Refunded releases the reserved stock back.
+        - moving OUT of Cancelled/Refunded (e.g. admin reactivates an order)
+          re-reserves it, so stock stays correct either direction.
+        Use this instead of setting `.status` directly whenever an order's
+        status can change after checkout (cancellation, admin edits, etc).
+        """
+        old_status = self.status
+        if old_status == new_status:
+            return
+
+        was_restocked = old_status in self.RESTOCK_STATUSES
+        will_be_restocked = new_status in self.RESTOCK_STATUSES
+
+        if will_be_restocked and not was_restocked:
+            for item in self.items.select_related("product"):
+                if item.product:
+                    item.product.stock += item.quantity
+                    item.product.save(update_fields=["stock"])
+        elif was_restocked and not will_be_restocked:
+            for item in self.items.select_related("product"):
+                if item.product:
+                    item.product.stock -= item.quantity
+                    item.product.save(update_fields=["stock"])
+
+        self.status = new_status
+        self.save(update_fields=["status"])
 
     def save(self, *args, **kwargs):
         if not self.order_number:

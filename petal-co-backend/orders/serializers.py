@@ -75,6 +75,16 @@ class AdminOrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = ["id", "customer", "email", "date", "items", "total", "status", "referral_source"]
 
+    def update(self, instance, validated_data):
+        # Route status changes through apply_status() so cancelling/refunding
+        # (or reversing that) from the admin panel keeps product stock correct,
+        # instead of just overwriting the status field directly.
+        new_status = validated_data.pop("status", None)
+        instance = super().update(instance, validated_data)
+        if new_status and new_status != instance.status:
+            instance.apply_status(new_status)
+        return instance
+
     def get_customer(self, obj):
         full_name = f"{obj.user.first_name} {obj.user.last_name}".strip()
         return full_name or obj.user.email

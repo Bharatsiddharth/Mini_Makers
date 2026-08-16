@@ -181,8 +181,7 @@ class CancelOrderView(APIView):
         if order.status != Order.Status.PENDING:
             return Response({"detail": "Only pending orders can be cancelled."}, status=400)
 
-        order.status = Order.Status.CANCELLED
-        order.save(update_fields=["status"])
+        order.apply_status(Order.Status.CANCELLED)
         return Response(OrderSerializer(order).data, status=200)
 
 

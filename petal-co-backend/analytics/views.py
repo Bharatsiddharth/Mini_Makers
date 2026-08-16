@@ -29,6 +29,11 @@ class TrackVisitView(APIView):
         return Response(status=204)
 
 
+# Orders in these statuses never became real, fulfilled business — they should
+# never be counted toward revenue, order counts, or AOV on the dashboard.
+EXCLUDED_STATUSES = [Order.Status.CANCELLED, Order.Status.REFUNDED]
+
+
 class OverviewView(APIView):
     """GET /api/admin/analytics/overview/ — KPI cards on the dashboard home."""
 
@@ -38,8 +43,9 @@ class OverviewView(APIView):
         since = timezone.now() - timedelta(days=7)
         prev_since = since - timedelta(days=7)
 
-        week_orders = Order.objects.filter(created_at__gte=since)
-        prev_week_orders = Order.objects.filter(created_at__gte=prev_since, created_at__lt=since)
+        valid_orders = Order.objects.exclude(status__in=EXCLUDED_STATUSES)
+        week_orders = valid_orders.filter(created_at__gte=since)
+        prev_week_orders = valid_orders.filter(created_at__gte=prev_since, created_at__lt=since)
 
         week_revenue = week_orders.aggregate(total=Sum("total"))["total"] or 0
         prev_revenue = prev_week_orders.aggregate(total=Sum("total"))["total"] or 0
@@ -81,7 +87,7 @@ class RevenueByDayView(APIView):
         results = []
         for i in range(6, -1, -1):
             day = today - timedelta(days=i)
-            day_orders = Order.objects.filter(created_at__date=day)
+            day_orders = Order.objects.exclude(status__in=EXCLUDED_STATUSES).filter(created_at__date=day)
             agg = day_orders.aggregate(total=Sum("total"), count=Count("id"))
             results.append({
                 "day": day.strftime("%a"),
@@ -100,7 +106,8 @@ class SalesByCategoryView(APIView):
     def get(self, request):
         since = timezone.now() - timedelta(days=30)
         rows = (
-            Order.objects.filter(created_at__gte=since)
+            Order.objects.exclude(status__in=EXCLUDED_STATUSES)
+            .filter(created_at__gte=since)
             .values("items__product__category")
             .annotate(total=Sum("items__price_at_purchase"))
             .order_by("-total")
