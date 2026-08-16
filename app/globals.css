@@ -14,6 +14,30 @@
   --color-ink-soft: #6b5f58;
 }
 
+/* Dark mode colors - Professional UI/UX */
+.dark {
+  /* Primary backgrounds */
+  --color-cream: #0f0f0f;
+  --color-cream-deep: #1a1a1a;
+  
+  /* Text colors */
+  --color-ink: #f8f7f5;
+  --color-ink-soft: #a0a0a0;
+  
+  /* Brand accent colors - vibrant for dark mode */
+  --color-plum: #d8a0c4;
+  --color-plum-deep: #e8b8d8;
+  --color-rose: #e08a98;
+  
+  /* Neutral accent colors */
+  --color-gold: #d4b66f;
+  --color-sage: #a9c887;
+  
+  /* Interactive states */
+  --color-blush: #2a1f28;
+  --color-blush-soft: #1f1618;
+}
+
 @theme inline {
   --color-cream: var(--color-cream);
   --color-cream-deep: var(--color-cream-deep);
@@ -78,4 +102,45 @@ body {
 ::selection {
   background: var(--color-blush);
   color: var(--color-plum-deep);
+}
+
+/* Dark mode enhancements */
+.dark ::selection {
+  background: var(--color-plum);
+  color: var(--color-cream);
+}
+
+/* Smooth transitions for theme changes */
+* {
+  @apply transition-colors duration-300;
+}
+
+/* Dialog and dropdown backgrounds adjust for dark mode */
+.dark .bg-white {
+  @apply bg-cream-deep;
+}
+
+/* Dark mode border and shadow enhancements */
+.dark {
+  color-scheme: dark;
+}
+
+/* Enhanced dark mode borders - subtle but visible */
+.dark border-plum\/10 {
+  border-color: rgba(216, 160, 196, 0.15);
+}
+
+/* Dark mode shadow enhancement for depth */
+.dark {
+  --tw-shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Improve hover states in dark mode */
+.dark .hover\:bg-blush-soft:hover {
+  background-color: var(--color-blush);
+}
+
+/* Better backdrop blur for dark mode */
+.dark .backdrop-blur {
+  background-color: rgba(15, 15, 15, 0.7);
 }
