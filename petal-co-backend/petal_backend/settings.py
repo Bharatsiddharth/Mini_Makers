@@ -197,6 +197,12 @@ EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
 # Where "new order" admin notifications go. Falls back to the SMTP login if unset.
 SUPPORT_EMAIL = env("SUPPORT_EMAIL", default=EMAIL_HOST_USER)
 
+# Brevo (https://www.brevo.com) HTTPS email API — used instead of raw SMTP in
+# orders/emails.py whenever this is set, since most free-tier hosts (Render
+# included) block outbound SMTP ports entirely. Leave unset locally to keep
+# using the console/SMTP backend above for local dev.
+BREVO_API_KEY = env("BREVO_API_KEY", default="")
+
 # ---- Supabase Storage (product image uploads) ----
 # SUPABASE_SERVICE_ROLE_KEY is a SECRET — server-side only, never send it to
 # the frontend. It's different from NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY above.
