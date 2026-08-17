@@ -194,5 +194,11 @@ LOGGING = {
     },
     "loggers": {
         "orders.emails": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        # With DEBUG=False (production), Django swallows unhandled-exception
+        # tracebacks by default instead of printing them anywhere — so every
+        # 500 in the Render logs so far has shown up with zero detail. This
+        # forces the full traceback for every 500 onto the console, which
+        # Render captures in its Logs tab.
+        "django.request": {"handlers": ["console"], "level": "ERROR", "propagate": False},
     },
 }
