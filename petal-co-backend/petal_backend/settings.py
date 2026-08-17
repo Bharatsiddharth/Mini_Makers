@@ -187,6 +187,13 @@ EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Petal & Co. <noreply@example.com>")
+# Some hosts (Render, Heroku, etc.) silently block/drop outbound SMTP
+# connections rather than rejecting them — without a timeout, smtplib hangs
+# indefinitely, which eventually kills the entire worker process (SIGKILL)
+# and surfaces as an opaque 500 with no catchable exception. A short timeout
+# turns that hang into a normal, catchable socket.timeout that orders/emails.py
+# already handles gracefully.
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
 # Where "new order" admin notifications go. Falls back to the SMTP login if unset.
 SUPPORT_EMAIL = env("SUPPORT_EMAIL", default=EMAIL_HOST_USER)
 
