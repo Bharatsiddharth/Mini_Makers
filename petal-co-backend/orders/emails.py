@@ -66,10 +66,14 @@ def send_order_confirmation_email(order):
         f"\u2014 Petal & Co."
     )
 
-    html_body = render_to_string(
-        "emails/order_confirmation.html",
-        {"order": order, "items": order.items.all(), "support_email": settings.SUPPORT_EMAIL},
-    )
+    try:
+        html_body = render_to_string(
+            "emails/order_confirmation.html",
+            {"order": order, "items": order.items.all(), "support_email": settings.SUPPORT_EMAIL},
+        )
+    except Exception:
+        logger.exception("Failed to render order-confirmation template — falling back to plain text only")
+        html_body = None
 
     _send(subject, order.email, text_body, html_body)
 

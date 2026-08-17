@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 import { Product } from "./types";
 import { apiFetch, getAccessToken } from "./api";
 
-type CartLine = { product: Product; qty: number };
+type CartLine = { product: Product; qty: number; cartItemId?: number };
 
 type CartContextValue = {
   lines: CartLine[];
@@ -51,10 +51,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const syncWithBackend = useCallback(async () => {
     if (!getAccessToken()) return;
     try {
-      const cart = await apiFetch<{ items: { product: Product; quantity: number }[] }>("/cart/");
+      const cart = await apiFetch<{ items: { id: number; product: Product; quantity: number }[] }>("/cart/");
       const syncedLines = cart.items.map((item) => ({
         product: item.product,
         qty: item.quantity,
+        cartItemId: item.id,
       }));
       setLines(syncedLines);
     } catch {
@@ -80,10 +81,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     if (getAccessToken()) {
       try {
-        await apiFetch("/cart/items/", {
+        const cart = await apiFetch<{ items: { id: number; product: Product; quantity: number }[] }>("/cart/items/", {
           method: "POST",
           body: JSON.stringify({ productId: Number(product.id), quantity: qty }),
         });
+        // Capture real cart-item ids from the backend so subsequent
+        // PATCH/DELETE calls use the CartItem pk, NOT the product id.
+        setLines((prev) =>
+          prev.map((l) => {
+            const backendItem = cart.items.find((i) => i.product.id === product.id);
+            return backendItem
+              ? { ...l, qty: backendItem.quantity, cartItemId: backendItem.id }
+              : l;
+          })
+        );
       } catch {
         // Local state works even if backend sync fails
       }
@@ -91,10 +102,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const removeItem = async (productId: string) => {
+    // Read the line BEFORE clearing it so we keep the real cart-item id.
+    const line = lines.find((l) => l.product.id === productId);
     setLines((prev) => prev.filter((l) => l.product.id !== productId));
     if (getAccessToken()) {
       try {
-        await apiFetch(`/cart/items/${Number(productId)}/`, { method: "DELETE" });
+        const cartItemId = line?.cartItemId ?? Number(productId);
+        await apiFetch(`/cart/items/${cartItemId}/`, { method: "DELETE" });
       } catch {
         // Ignore
       }
@@ -102,6 +116,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const setQty = async (productId: string, qty: number) => {
+    // Read the line BEFORE updating so we keep the real cart-item id.
+    const line = lines.find((l) => l.product.id === productId);
     setLines((prev) =>
       qty <= 0
         ? prev.filter((l) => l.product.id !== productId)
@@ -109,7 +125,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
     if (getAccessToken()) {
       try {
-        await apiFetch(`/cart/items/${Number(productId)}/`, {
+        const cartItemId = line?.cartItemId ?? Number(productId);
+        await apiFetch(`/cart/items/${cartItemId}/`, {
           method: "PATCH",
           body: JSON.stringify({ quantity: qty }),
         });
@@ -126,9 +143,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     if (getAccessToken()) {
       Promise.all(
-        lines.map((l) =>
-          apiFetch(`/cart/items/${Number(l.product.id)}/`, { method: "DELETE" }).catch(() => {})
-        )
+        lines.map((l) => {
+          const cartItemId = l.cartItemId ?? Number(l.product.id);
+          return apiFetch(`/cart/items/${cartItemId}/`, { method: "DELETE" }).catch(() => {});
+        })
       ).catch(() => {});
     }
   };
