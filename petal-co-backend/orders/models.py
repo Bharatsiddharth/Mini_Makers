@@ -97,8 +97,26 @@ class Order(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.order_number:
-            last = Order.objects.order_by("-id").first()
-            next_id = (last.id + 1) if last else 1042
+            # Derive the next number from the highest existing PC-#### value,
+            # not from the row id. IDs can drift from the order numbering scheme
+            # (seed data, manual imports, deleted rows), so scanning by the
+            # numerical suffix itself is the only reliable way to keep the
+            # sequence unique and monotonic.
+            max_number = 0
+            for order_number in Order.objects.exclude(order_number="").values_list("order_number", flat=True):
+                try:
+                    suffix = int(order_number.rsplit("-", 1)[-1])
+                    max_number = max(max_number, suffix)
+                except (TypeError, ValueError):
+                    continue
+
+            next_id = max_number + 1 if max_number else 1042
+
+            # Guard against lingering collisions if an old row was inserted with
+            # the next number already taken; keep nudging until a free value is found.
+            while Order.objects.filter(order_number=f"PC-{next_id}").exists():
+                next_id += 1
+
             self.order_number = f"PC-{next_id}"
         super().save(*args, **kwargs)
 

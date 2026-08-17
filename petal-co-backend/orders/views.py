@@ -1,3 +1,5 @@
+import logging
+
 from django.db import transaction
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.response import Response
@@ -10,10 +12,28 @@ from .emails import send_admin_new_order_notification, send_order_confirmation_e
 from .models import Cart, CartItem, Order, OrderItem
 from .serializers import AdminOrderSerializer, CartSerializer, OrderSerializer
 
+logger = logging.getLogger(__name__)
+
 
 def _get_or_create_cart(user):
     cart, _ = Cart.objects.get_or_create(user=user)
     return cart
+
+
+def _safe_call(fn, *args, **kwargs):
+    """
+    Run a transaction.on_commit callback without ever letting it turn into a
+    500 for the request that triggered it. on_commit callbacks run *outside*
+    the normal request/response flow — if one raises, the exception has
+    nowhere else to go and DRF surfaces it as an Internal Server Error, even
+    though (as here) the order was already committed successfully. Emails are
+    inherently best-effort, so failures are logged and swallowed here as a
+    last line of defense on top of the guards already inside orders/emails.py.
+    """
+    try:
+        fn(*args, **kwargs)
+    except Exception:
+        logger.exception("on_commit callback %s failed — order was still saved successfully", getattr(fn, "__name__", fn))
 
 
 class CartView(APIView):
@@ -145,8 +165,10 @@ class CheckoutView(APIView):
 
         # Fire both emails only after this transaction actually commits, so a
         # mid-transaction rollback can't leave us having emailed a phantom order.
-        transaction.on_commit(lambda: send_order_confirmation_email(order))
-        transaction.on_commit(lambda: send_admin_new_order_notification(order))
+        # Wrapped in _safe_call so that even an unexpected bug inside the email
+        # helpers can never turn an already-successful order into a 500 response.
+        transaction.on_commit(lambda: _safe_call(send_order_confirmation_email, order))
+        transaction.on_commit(lambda: _safe_call(send_admin_new_order_notification, order))
 
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
 

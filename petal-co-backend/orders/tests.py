@@ -58,6 +58,43 @@ class OrderFlowTests(TestCase):
         self.assertEqual(order.total, Decimal("2598.00"))
         self.assertEqual(order.items.count(), 1)
 
+    def test_next_order_number_uses_highest_existing_number_regardless_of_id_order(self):
+        Order.objects.create(
+            user=self.user,
+            total=Decimal("100.00"),
+            shipping_name="First",
+            email="first@example.com",
+            phone="1111111111",
+            shipping_address="A",
+            city="Mumbai",
+            state="Maharashtra",
+            order_number="PC-5000",
+        )
+        Order.objects.create(
+            user=self.user,
+            total=Decimal("200.00"),
+            shipping_name="Second",
+            email="second@example.com",
+            phone="2222222222",
+            shipping_address="B",
+            city="Mumbai",
+            state="Maharashtra",
+            order_number="PC-1000",
+        )
+
+        next_order = Order.objects.create(
+            user=self.user,
+            total=Decimal("300.00"),
+            shipping_name="Third",
+            email="third@example.com",
+            phone="3333333333",
+            shipping_address="C",
+            city="Mumbai",
+            state="Maharashtra",
+        )
+
+        self.assertEqual(next_order.order_number, "PC-5001")
+
     def test_customer_can_fetch_order_history_and_detail(self):
         order = Order.objects.create(
             user=self.user,
