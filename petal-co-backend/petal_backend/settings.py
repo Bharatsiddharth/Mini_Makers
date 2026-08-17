@@ -97,7 +97,21 @@ DATABASES = {"default": env.db("DATABASE_URL", default=DATABASE_URL)}
 
 # Supabase requires SSL for external connections (skip for sqlite/local dev).
 if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql":
-    DATABASES["default"]["OPTIONS"] = {"sslmode": env("DB_SSLMODE", default="require")}
+    DATABASES["default"]["OPTIONS"] = {
+        "sslmode": env("DB_SSLMODE", default="require"),
+        # Disable psycopg3's automatic server-side prepared statements.
+        # psycopg3 prepares a query on the server once it sees the same query
+        # shape run a few times in one session — fine on a direct connection,
+        # but Supabase's pooled connection (Supavisor, used e.g. on Render)
+        # can route different statements from the same "session" to different
+        # backend Postgres connections, so a statement prepared against one
+        # physical connection can vanish before the next repeat of that same
+        # query runs. This exactly matches loops that repeat the same query
+        # shape multiple times in one request — like checkout's per-item
+        # OrderItem inserts and Product.stock updates — while one-off single
+        # queries (login, product list) keep working fine either way.
+        "prepare_threshold": None,
+    }
 
 AUTH_USER_MODEL = "accounts.User"
 
